@@ -102,6 +102,7 @@ class Worker extends EventEmitter
     @queues    = queues
     @callbacks = callbacks or {}
     @running   = false
+    @shutdown  = false
     @ready     = false
     @checkQueues()
 
@@ -110,6 +111,7 @@ class Worker extends EventEmitter
   # Returns nothing.
   start: ->
     if @ready
+      @register_events()
       @init => @poll()
     else
       @running = true
@@ -127,6 +129,24 @@ class Worker extends EventEmitter
       @conn.key('stat', 'failed', @name)
       @conn.key('stat', 'processed', @name)
     ], cb
+  
+  # Exit will end and set the shutdown variable to true, causing the process
+  # to exit.
+  #
+  # Returns nothing.
+  exit: ->
+    @end()
+    @shutdown = true
+
+  # Register events
+  #
+  # on SIGINT exit, which will end and change the shutdown variable to true
+  # causing the process to exit ON the next poll, preserving any active jobs
+  #
+  # Returns nothing.
+  register_events: ->
+    process.on 'SIGINT', () =>
+      @exit()
 
   # PRIVATE METHODS
 
@@ -136,6 +156,7 @@ class Worker extends EventEmitter
   #
   # Returns nothing.
   poll: (title) ->
+    process.exit() if @shutdown
     return unless @running
     process.title = title if title
     @queue = @queues.shift()
@@ -199,9 +220,11 @@ class Worker extends EventEmitter
   #
   # Returns nothing.
   pause: ->
-    @untrack()
+    console.log 'paused for 5 seconds'
+    # @untrack()
     @procline "Sleeping for #{@conn.timeout/1000}s"
     setTimeout =>
+      process.exit() if @shutdown
       return if !@running
       @track()
       @poll()
