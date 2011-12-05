@@ -8,7 +8,7 @@ I've decided to fork this and work on making the worker act more like the resque
 
 So far I've added:
 
-* POSIX Signal cactching for better exiting of workers, ie: SIGINT, SIGTERM will kill, SIGQUIT will allow job to finish.
+* POSIX Signal catching for better exiting of workers, ie: SIGINT, SIGTERM will kill, SIGQUIT will allow job to finish.
 
 ## USAGE
 
