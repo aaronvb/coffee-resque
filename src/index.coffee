@@ -220,8 +220,7 @@ class Worker extends EventEmitter
   #
   # Returns nothing.
   pause: ->
-    console.log 'paused for 5 seconds'
-    # @untrack()
+    @untrack()
     @procline "Sleeping for #{@conn.timeout/1000}s"
     setTimeout =>
       process.exit() if @shutdown
