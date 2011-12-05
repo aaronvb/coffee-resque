@@ -129,24 +129,33 @@ class Worker extends EventEmitter
       @conn.key('stat', 'failed', @name)
       @conn.key('stat', 'processed', @name)
     ], cb
-  
-  # Exit will end and set the shutdown variable to true, causing the process
-  # to exit.
+
+  # Exit will run end, cleaning up resque, then either kill the process or
+  # set the shutdown variable to true, allowing the current job to finish
+  # and killing the process on next poll.
   #
   # Returns nothing.
-  exit: ->
+  exit: (kill) ->
     @end()
-    @shutdown = true
+    if kill
+      process.exit()
+    else
+      @shutdown = true
 
   # Register events
   #
-  # on SIGINT exit, which will end and change the shutdown variable to true
-  # causing the process to exit ON the next poll, preserving any active jobs
+  # SIGINT: Exit immediately, stop processing jobs
+  # SIGTERM: Exit immediately, stop processing jobs
+  # SIGQUIT: Shutdown on next poll, or after current job is finished
   #
   # Returns nothing.
   register_events: ->
     process.on 'SIGINT', () =>
-      @exit()
+      @exit(true)
+    process.on 'SIGTERM', () =>
+      @exit(true)
+    process.on 'SIGQUIT', () =>
+      @exit(false)
 
   # PRIVATE METHODS
 
