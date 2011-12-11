@@ -173,20 +173,15 @@ class Worker extends EventEmitter
     @emit 'poll', @, @queue
     @redis.lpop @conn.key('queue', @queue), (err, resp) =>
       if !err && resp
-        @perform JSON.parse(resp.toString())
+        @work JSON.parse(resp.toString())
       else
         @emit 'error', err, @, @queue if err
         @pause()
 
-  # Handles the actual running of the job.
-  #
-  # job - The parsed Job object that is being run.
+  # Processed a job
   #
   # Returns nothing.
-  perform: (job) ->
-    old_title = process.title
-    @emit 'job', @, @queue, job
-    @procline "#{@queue} job since #{(new Date).toString()}"
+  perform: (job, old_title) ->
     if cb = @callbacks[job.class]
       cb job.args..., (result) =>
         try
@@ -200,6 +195,16 @@ class Worker extends EventEmitter
       @fail new Error("Missing Job: #{job.class}"), job
       @poll old_title
 
+  # Handles the actual running of the job.
+  #
+  # job - The parsed Job object that is being run.
+  #
+  # Returns nothing.
+  work: (job) ->
+    old_title = process.title
+    @emit 'job', @, @queue, job
+    @procline "#{@queue} job since #{(new Date).toString()}"
+    @perform(job, old_title)
   # Tracks stats for successfully completed jobs.
   #
   # result - The result produced by the job. 
