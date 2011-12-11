@@ -111,7 +111,7 @@ class Worker extends EventEmitter
   # Returns nothing.
   start: ->
     if @ready
-      @register_events()
+      @register_signal_handlers()
       @init => @poll()
     else
       @running = true
@@ -142,14 +142,14 @@ class Worker extends EventEmitter
     else
       @shutdown = true
 
-  # Register events
+  # Register Signal Handlers
   #
   # SIGINT: Exit immediately, stop processing jobs
   # SIGTERM: Exit immediately, stop processing jobs
   # SIGQUIT: Shutdown on next poll, or after current job is finished
   #
   # Returns nothing.
-  register_events: ->
+  register_signal_handlers: ->
     process.on 'SIGINT', () =>
       @exit(true)
     process.on 'SIGTERM', () =>
