@@ -234,7 +234,6 @@ class Worker extends EventEmitter
   #
   # Returns nothing.
   pause: ->
-    @untrack()
     @procline "Sleeping for #{@conn.timeout/1000}s"
     setTimeout =>
       process.exit() if @shutdown
