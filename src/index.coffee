@@ -105,6 +105,7 @@ class Worker extends EventEmitter
     @shutdown  = false
     @ready     = false
     @checkQueues()
+    @prune_dead_workers()
 
   # Public: Tracks the worker in Redis and starts polling.
   #
@@ -280,7 +281,34 @@ class Worker extends EventEmitter
       @queues = @queues.split(',')
       @ready  = true
       @name   = @_name
-
+  
+  # Checks for dead workers
+  # 
+  # Returns nothing.
+  prune_dead_workers: ->
+    @find_running_workers_in_linux()
+  
+  # Finds and removes dead workers from redis queue
+  
+  # Returns nothing.
+  find_workers_in_queue: (running_workers) ->
+    @redis.smembers @conn.key('workers'), (err, resp) =>
+      for worker in resp
+        unless worker == @name # don't remove this process
+          if running_workers.indexOf(worker.split(":")[1]) == -1
+            @redis.srem @conn.key('workers'), worker # remove worker from queue if it isn't running
+  
+  # Finds all running resque workers, then passes array to find_workers_in_queue
+  #
+  # Returns nothing.
+  find_running_workers_in_linux: ->
+    util = require('util')
+    exec = require('child_process').exec
+    child = exec 'ps -A -o pid,command | grep "[r]esque" | grep -v "resque-web"', (error, stdout, stderr) =>
+      running_workers = []
+      for resque_process in stdout.split("\n")
+        running_workers.push resque_process.split(" ")[0] unless resque_process == ""
+      @find_workers_in_queue(running_workers)
   # Sets the process title.
   #
   # msg - The String message for the title.
